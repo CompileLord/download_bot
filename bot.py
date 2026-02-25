@@ -50,6 +50,11 @@ class DownloadProgress:
     speed: float = 0
     eta: str = "Calculating..."
     cancel: bool = False
+    lock: Optional[asyncio.Lock] = None
+
+    def __post_init__(self):
+        if self.lock is None:
+            self.lock = asyncio.Lock()
 
 class SourceForgeParser:
     """Smart parser for SourceForge URLs with mirror selection"""
@@ -211,7 +216,8 @@ class ParallelDownloader:
                         if progress.cancel:
                             return False
                         await f.write(data)
-                        progress.downloaded += len(data)
+                        async with progress.lock:
+                            progress.downloaded += len(data)
                 
                 return True
                 
